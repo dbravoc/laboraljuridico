@@ -1,0 +1,62 @@
+require('dotenv').config();
+const express = require('express');
+const bodyParser = require('body-parser');
+const { OpenAI } = require('openai');
+const cors = require('cors');
+
+const app = express();
+app.use(bodyParser.json());
+app.use(cors());
+
+const openai = new OpenAI({
+    apiKey: process.env.JL_API_KEY,
+    organization: process.env.ORG_KEY
+
+});
+
+app.post('/message', async (req, res) => {
+    try {
+        const { userMessage } = req.body;
+
+        // Crear un hilo (Thread)
+        const threadResponse = await openai.beta.threads.create({
+            messages: [
+                {
+                    role: "user",
+                    content: userMessage
+                }
+            ]
+        });
+        console.log("Thread response:", threadResponse);
+        const threadId = threadResponse.id;
+        console.log("Thread ID:", threadId);
+        
+        // Obtener los mensajes del hilo, incluyendo la respuesta del asistente
+        const messagesResponse = await openai.beta.threads.messages.list(threadId);
+        console.log("Respuestas del asistente:", messagesResponse);
+
+        const messages = messagesResponse.data;
+
+        // Procesar y enviar respuestas
+        if (messages && messages.length > 0) {
+            const botMessages = messages
+                .filter(msg => msg.role === 'assistant')
+                .map(msg => {
+                    // Asumiendo que el contenido del mensaje es un array con un objeto que contiene el texto
+                    return { text: msg.content.length > 0 ? msg.content[0].text : "No se encontró texto" };
+                });
+
+            res.json({ messages: botMessages });
+        } else {
+            res.json({ messages: [{ text: "No hay respuesta del asistente." }] });
+        }
+    } catch (error) {
+        console.error('Error en la API de OpenAI:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Servidor ejecutándose en el puerto ${PORT}`);
+});

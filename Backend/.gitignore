@@ -1,0 +1,22 @@
+# Dependencias
+node_modules/
+
+# Archivo de entorno
+.env
+
+# Directorio de logs
+logs
+*.log
+
+# Directorios y archivos de IDE/editor
+.vscode/
+*.swp
+*.swo
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de compilación
+/dist
+/build
